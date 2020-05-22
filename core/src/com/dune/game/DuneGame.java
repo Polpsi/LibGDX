@@ -1,60 +1,35 @@
 package com.dune.game;
 
-import com.badlogic.gdx.ApplicationAdapter;
+import com.badlogic.gdx.Game;
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.badlogic.gdx.math.Vector2;
+import com.dune.game.screens.GameScreen;
 
-public class DuneGame extends ApplicationAdapter {
-
+public class DuneGame extends Game {
     private SpriteBatch batch;
-    private Tank tank;
-    private RunningCircle circle;
+    private GameScreen gameScreen;
+
+    // Домашнее задание:
+    // 1. Разбор кода, в домашке задавайте вопросы что не ясно
+    // 2. Реализовать класс Projectile (снаряд), игрок по кнопке K
+    // может выпускать снаряд. Если снаряд улетает за экран, он
+    // должен деактивироваться. Если снаряд деактивирован, то им можно
+    // выстрелить снова
 
     @Override
     public void create() {
-        // Если я правильно понял, то первоначально создаваемое поле
-        // соответствует размерам виртуального поля,
-        // которое потом масштабируется по экрану, а то хочется уйти от "магических цифр".
-        // И такую конструкцию я могу использовать для получения границ экрана.
-        Vector2 fieldSize = new Vector2(Gdx.graphics.getWidth(),Gdx.graphics.getHeight());
-
-        batch = new SpriteBatch();
-        tank = new Tank(200, 200, fieldSize);
-        circle = new RunningCircle(700, 400, fieldSize);
+        this.batch = new SpriteBatch();
+        this.gameScreen = new GameScreen(batch);
+        this.setScreen(gameScreen);
     }
 
     @Override
     public void render() {
-        float dt = Gdx.graphics.getDeltaTime();
-        update(dt);
-        Gdx.gl.glClearColor(0, 0.4f, 0, 1);
-        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
-        batch.begin();
-        renderAll();
-        batch.end();
-    }
-
-    public void update(float dt) {
-        circle.update(tank.getPosition(), tank.getSize());
-        tank.update(dt);
-    }
-
-    public void renderAll() {
-        circle.render(batch);
-        tank.render(batch);
+        getScreen().render(Gdx.graphics.getDeltaTime());
     }
 
     @Override
     public void dispose() {
         batch.dispose();
-        tank.dispose();
-        circle.dispose();
     }
-
-    // Домашнее задание:
-    // - Задать координаты точки, и нарисовать в ней круг (любой круг, радиусом пикселей 50) +
-    // - Если "танк" подъедет вплотную к кругу, то круг должен переместиться в случайную точку +
-    // - * Нельзя давать танку заезжать за экран +
 }
