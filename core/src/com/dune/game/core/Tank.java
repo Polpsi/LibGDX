@@ -32,7 +32,7 @@ public class Tank extends GameObject {
         return (int) (moveTimer / timePerFrame) % textures.length;
     }
 
-    public void update(float dt) {
+    public void update(float dt, BattleMap map) {
         if (Gdx.input.justTouched()) {
             destination.set(Gdx.input.getX(), 720 - Gdx.input.getY());
         }
@@ -70,7 +70,18 @@ public class Tank extends GameObject {
         if (Gdx.input.isKeyJustPressed(Input.Keys.K)) {
             fire();
         }
+        // Jackpot or not jackpot?
+        // That is the question!
+        grabResource(map);
         checkBounds();
+    }
+
+    private void grabResource(BattleMap map) {
+        if (map.grabSpice(position)) {
+            // Если тру, то увеличить количество собранных ресурсов.
+            // У меня - праздничный салют.
+            fire();
+        }
     }
 
     public void fire() {

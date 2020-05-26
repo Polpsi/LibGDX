@@ -29,7 +29,8 @@ public class GameController {
     }
 
     public void update(float dt) {
-        tank.update(dt);
+        // Скажем танку - у кого про ресурсы спросить.
+        tank.update(dt,map);
         projectilesController.update(dt);
         checkCollisions(dt);
     }
