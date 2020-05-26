@@ -1,49 +1,49 @@
 package com.dune.game.core;
 
+import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.g2d.TextureAtlas;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector2;
 
-public class Projectile {
-    private Vector2 position;
-    private Vector2 velocity = new Vector2(0,0);
-    private boolean isActive;
+public class Projectile extends GameObject implements Poolable {
+    private TextureRegion texture;
+    private Vector2 velocity;
+    private float speed;
+    private float angle;
+    private boolean active;
 
-    // Снаряд новый - нужен конструктор.
-    // И сразу в сетуп.
-    Projectile(Vector2 startPosition, float angle) {
-        setup(startPosition,angle);
+    @Override
+    public boolean isActive() {
+        return active;
     }
 
-    // Новый выстрел, значит снова снаряд в строю, с надписью "МЫ ПОБЕДИМ!"
-    // isActive = true;
-    public void setup(Vector2 startPosition, float angle) {
-        this.isActive=true;
-        this.position=startPosition;
-        velocity.set(400.0f * MathUtils.cosDeg(angle), 400.0f * MathUtils.sinDeg(angle));
+    public void deactivate() {
+        active = false;
+    }
+
+    public Projectile(GameController gc) {
+        super(gc);
+        this.velocity = new Vector2();
+        this.speed = 320.0f;
+    }
+
+    public void setup(Vector2 startPosition, float angle, TextureRegion texture) {
+        this.texture = texture;
+        this.position.set(startPosition);
+        this.angle = angle;
+        this.velocity.set(speed * MathUtils.cosDeg(angle), speed * MathUtils.sinDeg(angle));
+        this.active = true;
+    }
+
+    public void render(SpriteBatch batch) {
+        batch.draw(texture, position.x - 8, position.y - 8);
     }
 
     public void update(float dt) {
-        // position.x += velocity.x * dt;
-        // position.y += velocity.y * dt;
-        checkBounds();
-        if (isActive) {
-            position.mulAdd(velocity, dt);
+        position.mulAdd(velocity, dt);
+        if (position.x < 0 || position.x > 1280 || position.y < 0 || position.y > 720) {
+            deactivate();
         }
-    }
-
-    public Vector2 getPosition() {
-        return position;
-    }
-
-    // Вышли за пределы - амба, никого не убиваем. Будет телепорт обратно в орудие при следующем выстреле.
-    //  isActive = false;
-    public void checkBounds() {
-        if ((position.x < 0) || (position.y < 0) || (position.x > 1280) || (position.y > 720)) {
-            isActive = false;
-        }
-    }
-
-    public boolean isActive() {
-        return isActive;
     }
 }
