@@ -26,6 +26,8 @@ public class Tank extends GameObject implements Poolable {
     private float moveTimer;
     private float timePerFrame;
     private int container;
+    private int maxCapacity;
+    private boolean isSelected;
 
     @Override
     public boolean isActive() {
@@ -37,10 +39,11 @@ public class Tank extends GameObject implements Poolable {
         this.progressbarTexture = Assets.getInstance().getAtlas().findRegion("progressbar");
         this.timePerFrame = 0.08f;
         this.rotationSpeed = 90.0f;
+        this.maxCapacity = 5;
     }
 
     public void setup(Owner ownerType, float x, float y) {
-        this.textures = Assets.getInstance().getAtlas().findRegion("tankanim").split(64,64)[0];
+        this.textures = Assets.getInstance().getAtlas().findRegion("tankanim").split(64, 64)[0];
         this.position.set(x, y);
         this.ownerType = ownerType;
         this.speed = 120.0f;
@@ -54,8 +57,17 @@ public class Tank extends GameObject implements Poolable {
     }
 
     public void update(float dt) {
+        if (Gdx.input.isButtonPressed(Input.Buttons.LEFT)) {
+            if ((Math.abs(Gdx.input.getX() - position.x) < 40) && (Math.abs(720 - Gdx.input.getY() - position.y) < 40)) {
+                isSelected = true;
+            } else if ((Gdx.input.isKeyPressed(Input.Keys.SHIFT_LEFT)) || (Gdx.input.isKeyPressed(Input.Keys.SHIFT_RIGHT))) {
+                // Если зажат шифт,то игрок хочет несколько юнитов выделить, значит ничего делать не надо.
+            } else isSelected = false;
+        }
         if (Gdx.input.isButtonPressed(Input.Buttons.RIGHT)) {
-            destination.set(Gdx.input.getX(), 720 - Gdx.input.getY());
+            if (isSelected) {
+                destination.set(Gdx.input.getX(), 720 - Gdx.input.getY());
+            }
         }
         if (position.dst(destination) > 3.0f) {
             float angleTo = tmp.set(destination).sub(position).angle();
@@ -93,14 +105,19 @@ public class Tank extends GameObject implements Poolable {
     }
 
     public void updateWeapon(float dt) {
-        if (weapon.getType() == Weapon.Type.HARVEST) {
-            if (gc.getMap().getResourceCount(this) > 0) {
-                int result = weapon.use(dt);
-                if (result > -1) {
-                    container += gc.getMap().harvestResource(this, result);
+        // Можно проверять независимо от вида оружия:
+        //Сколько собрал, сколько сделал выстрелов...
+        // Достиг лимита - остальное даже проверять не нужно.
+        if (container < maxCapacity) {
+            if (weapon.getType() == Weapon.Type.HARVEST) {
+                if (gc.getMap().getResourceCount(this) > 0) {
+                    int result = weapon.use(dt);
+                    if (result > -1) {
+                        container += gc.getMap().harvestResource(this, result);
+                    }
+                } else {
+                    weapon.reset();
                 }
-            } else {
-                weapon.reset();
             }
         }
     }
@@ -121,12 +138,23 @@ public class Tank extends GameObject implements Poolable {
     }
 
     public void render(SpriteBatch batch) {
+        if (isSelected) {
+            batch.setColor(0.5f, 0.5f, 0.5f, 1.0f);
+        }
         batch.draw(textures[getCurrentFrameIndex()], position.x - 40, position.y - 40, 40, 40, 80, 80, 1, 1, angle);
+        batch.setColor(1.0f, 1.0f, 1.0f, 1.0f);
         if (weapon.getType() == Weapon.Type.HARVEST && weapon.getUsageTimePercentage() > 0.0f) {
             batch.setColor(0.2f, 0.2f, 0.0f, 1.0f);
             batch.draw(progressbarTexture, position.x - 32, position.y + 30, 64, 12);
             batch.setColor(1.0f, 1.0f, 0.0f, 1.0f);
             batch.draw(progressbarTexture, position.x - 30, position.y + 32, 60 * weapon.getUsageTimePercentage(), 8);
+            batch.setColor(1.0f, 1.0f, 1.0f, 1.0f);
+        }
+        if (container > 0) {
+            batch.setColor(0.2f, 0.2f, 0.0f, 1.0f);
+            batch.draw(progressbarTexture, position.x - 32, position.y + 44, 64, 12);
+            batch.setColor(1.0f, 0.0f, 1.0f, 1.0f);
+            batch.draw(progressbarTexture, position.x - 30, position.y + 46, container * 60 / maxCapacity, 8);
             batch.setColor(1.0f, 1.0f, 1.0f, 1.0f);
         }
     }
