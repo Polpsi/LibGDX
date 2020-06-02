@@ -11,6 +11,18 @@ public abstract class GameObject {
         return position;
     }
 
+    public int getCellX() {
+        return (int) (position.x / BattleMap.CELL_SIZE);
+    }
+
+    public int getCellY() {
+        return (int) (position.y / BattleMap.CELL_SIZE);
+    }
+
+    public void moveBy(Vector2 value) {
+        position.add(value);
+    }
+
     public GameObject(GameController gc) {
         this.gc = gc;
         this.position = new Vector2();

@@ -1,56 +1,106 @@
 package com.dune.game.core;
 
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector2;
 
 public class BattleMap {
-    private TextureRegion grassTexture;
-    private TextureRegion spiceTexture;
-    private int[][] fieldResources;
+    private class Cell {
+        private int cellX, cellY;
+        private int resource;
+        private float resourceRegenerationRate;
+        private float resourceRegenerationTime;
 
-    public BattleMap() {
-        this.grassTexture = Assets.getInstance().getAtlas().findRegion("grass");
-        this.spiceTexture = Assets.getInstance().getAtlas().findRegion("spice");
-        generateResources(16, 9);
-    }
+        public Cell(int cellX, int cellY) {
+            this.cellX = cellX;
+            this.cellY = cellY;
+            if(MathUtils.random() < 0.1f) {
+                resource = MathUtils.random(1, 3);
+            }
+            resourceRegenerationRate = MathUtils.random(5.0f) - 4.5f;
+            if (resourceRegenerationRate < 0.0f) {
+                resourceRegenerationRate = 0.0f;
+            } else {
+                resourceRegenerationRate *= 20.0f;
+                resourceRegenerationRate += 10.0f;
+            }
+        }
 
-    public void render(SpriteBatch batch) {
-        for (int i = 0; i < 16; i++) {
-            for (int j = 0; j < 9; j++) {
-                batch.draw(grassTexture, i * 80, j * 80);
-                if (fieldResources[i][j] == 1) {
-                    // Текстура спайса круглая, лежит поверх травы.
-                    batch.draw(spiceTexture, i * 80, j * 80);
+        private void update(float dt) {
+            if (resourceRegenerationRate > 0.01f) {
+                resourceRegenerationTime += dt;
+                if (resourceRegenerationTime > resourceRegenerationRate) {
+                    resourceRegenerationTime = 0.0f;
+                    resource++;
+                    if (resource > 5) {
+                        resource = 5;
+                    }
+                }
+            }
+        }
+
+        private void render(SpriteBatch batch) {
+            if (resource > 0) {
+                float scale = 0.5f + resource * 0.2f;
+                batch.draw(resourceTexture, cellX * 80, cellY * 80, 40, 40, 80, 80, scale, scale, 0.0f);
+            } else {
+                if (resourceRegenerationRate > 0.01f) {
+                    batch.draw(resourceTexture, cellX * 80, cellY * 80, 40, 40, 80, 80, 0.1f, 0.1f, 0.0f);
                 }
             }
         }
     }
 
-    // Мапа знает, есть ли ресурсы в этой точке и какие.
-    // Для учета сбора определённому танку - возвращаем тру.
-    // Если будет несколько видов ресурсов - то отдавать не тру, а вид ресурса.
-    // Для сбора ресурсов нужно заехать центром, а не просто коснуться.
-    // Если ресурс собран - он уходит в ноль.
-    public boolean grabSpice(Vector2 positionTank) {
-        int x = (int)positionTank.x/80;
-        int y = (int)positionTank.y/80;
-        if (fieldResources[x][y] == 1) {
-            fieldResources[x][y] = 0;
-            return true;
+    public static final int COLUMNS_COUNT = 16;
+    public static final int ROWS_COUNT = 9;
+    public static final int CELL_SIZE = 80;
+
+    private TextureRegion grassTexture;
+    private TextureRegion resourceTexture;
+    private Cell[][] cells;
+
+    public BattleMap() {
+        this.grassTexture = Assets.getInstance().getAtlas().findRegion("grass");
+        this.resourceTexture = Assets.getInstance().getAtlas().findRegion("resource");
+        this.cells = new Cell[COLUMNS_COUNT][ROWS_COUNT];
+        for (int i = 0; i < COLUMNS_COUNT; i++) {
+            for (int j = 0; j < ROWS_COUNT; j++) {
+                cells[i][j] = new Cell(i, j);
+            }
         }
-        return false;
     }
 
-    private void generateResources(int width, int height) {
-        // Коэффициент позволяет регулировать процентное соотношение ресурсов к размеру карты.
-        // Чем выше ставка, тем больше ресурсов. Двойка - магическое число. :)
-        int rate = 12;
-        fieldResources = new int[width][height];
-        for (int i = 0; i < width; i++) {
-            for (int j = 0; j < height; j++) {
-                fieldResources[i][j] = (MathUtils.random(width * height / rate) < 2) ? 1 : 0;
+    public int getResourceCount(Tank harvester) {
+        return cells[harvester.getCellX()][harvester.getCellY()].resource;
+    }
+
+    public int harvestResource(Tank harvester, int power) {
+        int value = 0;
+        if(cells[harvester.getCellX()][harvester.getCellY()].resource >= power) {
+            value = power;
+            cells[harvester.getCellX()][harvester.getCellY()].resource -= power;
+        } else {
+            value = cells[harvester.getCellX()][harvester.getCellY()].resource;
+            cells[harvester.getCellX()][harvester.getCellY()].resource = 0;
+        }
+        return value;
+    }
+
+    public void render(SpriteBatch batch) {
+        for (int i = 0; i < COLUMNS_COUNT; i++) {
+            for (int j = 0; j < ROWS_COUNT; j++) {
+                batch.draw(grassTexture, i * 80, j * 80);
+                cells[i][j].render(batch);
+            }
+        }
+    }
+
+    public void update(float dt) {
+        for (int i = 0; i < COLUMNS_COUNT; i++) {
+            for (int j = 0; j < ROWS_COUNT; j++) {
+                cells[i][j].update(dt);
             }
         }
     }
