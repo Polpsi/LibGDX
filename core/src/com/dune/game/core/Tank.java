@@ -9,11 +9,8 @@ import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector2;
 
 public class Tank extends GameObject implements Poolable {
-    public enum Owner {
-        PLAYER, AI
-    }
 
-    private Owner ownerType;
+    private GameController.Owner ownerType;
     private Weapon weapon;
     private Vector2 destination;
     private TextureRegion[] textures;
@@ -47,8 +44,12 @@ public class Tank extends GameObject implements Poolable {
         }
     }
 
-    public Owner getOwnerType() {
+    public GameController.Owner getOwnerType() {
         return ownerType;
+    }
+
+    public void wasDamaged(float power) {
+        this.hp -= power;
     }
 
     @Override
@@ -68,7 +69,7 @@ public class Tank extends GameObject implements Poolable {
         this.rotationSpeed = 90.0f;
     }
 
-    public void setup(Owner ownerType, float x, float y) {
+    public void setup(GameController.Owner ownerType, float x, float y) {
         this.textures = Assets.getInstance().getAtlas().findRegion("tankcore").split(64, 64)[0];
         this.position.set(x, y);
         this.ownerType = ownerType;
@@ -78,7 +79,7 @@ public class Tank extends GameObject implements Poolable {
         if (MathUtils.random() < 0.5f) {
             this.weapon = new Weapon(Weapon.Type.HARVEST, 3.0f, 1);
         } else {
-            this.weapon = new Weapon(Weapon.Type.GROUND, 1.5f, 1);
+            this.weapon = new Weapon(Weapon.Type.GROUND, 1.5f, 25);
         }
         this.destination = new Vector2(position);
     }
@@ -120,13 +121,18 @@ public class Tank extends GameObject implements Poolable {
     }
 
     public void updateWeapon(float dt) {
+        // После стрельбы пушку в походное положение
+        if (target == null) {
+            weapon.setAngle(rotateTo(weapon.getAngle(), this.angle, 180.0f, dt));
+        }
         if (weapon.getType() == Weapon.Type.GROUND && target != null) {
             float angleTo = tmp.set(target.position).sub(position).angle();
             weapon.setAngle(rotateTo(weapon.getAngle(), angleTo, 180.0f, dt));
             int power = weapon.use(dt);
             if (power > -1) {
-                gc.getProjectilesController().setup(position, weapon.getAngle());
+                gc.getProjectilesController().setup(position, weapon.getAngle(), power, ownerType);
             }
+            if (!target.isActive()) target = null;
         }
         if (weapon.getType() == Weapon.Type.HARVEST) {
             if (gc.getMap().getResourceCount(this) > 0) {
@@ -160,6 +166,7 @@ public class Tank extends GameObject implements Poolable {
             float c = 0.7f + (float) Math.sin(lifeTime * 8.0f) * 0.3f;
             batch.setColor(c, c, c, 1.0f);
         }
+        if (ownerType == GameController.Owner.AI) batch.setColor(0.8f, 0.8f, 0.8f, 1.0f);
         batch.draw(textures[getCurrentFrameIndex()], position.x - 40, position.y - 40, 40, 40, 80, 80, 1, 1, angle);
         batch.draw(weaponsTextures[weapon.getType().getImageIndex()], position.x - 40, position.y - 40, 40, 40, 80, 80, 1, 1, weapon.getAngle());
 
