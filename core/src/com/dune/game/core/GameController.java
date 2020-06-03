@@ -4,16 +4,18 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.InputAdapter;
 import com.badlogic.gdx.InputProcessor;
-import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector2;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 public class GameController {
+    // Единый список владельцев для всех объектов.
+    public enum Owner {
+        PLAYER, AI
+    }
+
     private BattleMap map;
     private ProjectilesController projectilesController;
     private TanksController tanksController;
@@ -48,10 +50,10 @@ public class GameController {
         this.projectilesController = new ProjectilesController(this);
         this.tanksController = new TanksController(this);
         for (int i = 0; i < 5; i++) {
-            this.tanksController.setup(MathUtils.random(80, 1200), MathUtils.random(80, 640), Tank.Owner.PLAYER);
+            this.tanksController.setup(MathUtils.random(80, 1200), MathUtils.random(80, 640), Owner.PLAYER);
         }
         for (int i = 0; i < 2; i++) {
-            this.tanksController.setup(MathUtils.random(80, 1200), MathUtils.random(80, 640), Tank.Owner.AI);
+            this.tanksController.setup(MathUtils.random(80, 1200), MathUtils.random(80, 640), Owner.AI);
         }
         prepareInput();
     }
@@ -77,6 +79,23 @@ public class GameController {
                     tmp.scl(-1);
                     t1.moveBy(tmp);
                 }
+            }
+            // Танк уже запрошен, сразу на попадания проверим.
+            checkProjectileHit(t1);
+        }
+        // Последний танк тоже надо проверить на попадание снарядов.
+        checkProjectileHit(tanksController.getActiveList().get(tanksController.activeSize() - 1));
+    }
+
+    private void checkProjectileHit(Tank tank) {
+        for (int j = 0; j < projectilesController.activeSize(); j++) {
+            Projectile projectile = projectilesController.getActiveList().get(j);
+            float dst = tank.getPosition().dst(projectile.getPosition());
+            // Отключаем FriendlyFire. Если вместо ownerType снаряду задать таргет,
+            // то пуля будет лететь к цели сквозь другие вражеские юниты.
+            if (dst < 30 && projectile.getOwnerType() != tank.getOwnerType()) {
+                tank.wasDamaged(projectile.getWeaponEnergy());
+                projectile.deactivate();
             }
         }
     }
@@ -115,7 +134,7 @@ public class GameController {
                     if (Math.abs(tmp.x - selectionStart.x) > 20 & Math.abs(tmp.y - selectionStart.y) > 20) {
                         for (int i = 0; i < tanksController.getActiveList().size(); i++) {
                             Tank t = tanksController.getActiveList().get(i);
-                            if (t.getOwnerType() == Tank.Owner.PLAYER && t.getPosition().x > selectionStart.x && t.getPosition().x < tmp.x
+                            if (t.getOwnerType() == GameController.Owner.PLAYER && t.getPosition().x > selectionStart.x && t.getPosition().x < tmp.x
                                     && t.getPosition().y > tmp.y && t.getPosition().y < selectionStart.y
                             ) {
                                 selectedUnits.add(t);
