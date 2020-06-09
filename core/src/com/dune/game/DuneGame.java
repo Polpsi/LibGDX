@@ -1,44 +1,37 @@
 package com.dune.game;
 
-import com.badlogic.gdx.ApplicationAdapter;
+import com.badlogic.gdx.Game;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.dune.game.screens.GameScreen;
+import com.dune.game.screens.ScreenManager;
 
-public class DuneGame extends ApplicationAdapter {
-
+public class DuneGame extends Game {
     private SpriteBatch batch;
-    private Tank tank;
+
+    // Домашнее задание:
+    // 1. Разобраться с кодом
+    // 2. Сделайте площадку, куда харвестеры могут сдавать ресуры, и они должны начисляться игроку
+    // 3. Сделайте GUI для экрана меню (начать игру, выйти из игры) [ Выход через: Gdx.app.exit(); ]
 
     @Override
     public void create() {
         batch = new SpriteBatch();
-        tank = new Tank(200, 200);
+        ScreenManager.getInstance().init(this, batch);
+        ScreenManager.getInstance().changeScreen(ScreenManager.ScreenType.GAME);
     }
 
     @Override
     public void render() {
-        float dt = Gdx.graphics.getDeltaTime();
-        update(dt);
-        Gdx.gl.glClearColor(0, 0.4f, 0, 1);
+        Gdx.gl.glClearColor(0, 0, 0, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
-        batch.begin();
-        tank.render(batch);
-        batch.end();
-    }
-
-    public void update(float dt) {
-        tank.update(dt);
+        float dt = Gdx.graphics.getDeltaTime();
+        getScreen().render(dt);
     }
 
     @Override
     public void dispose() {
         batch.dispose();
-        tank.dispose();
     }
-
-    // Домашнее задание:
-    // - Задать координаты точки, и нарисовать в ней круг (любой круг, радиусом пикселей 50)
-    // - Если "танк" подъедет вплотную к кругу, то круг должен переместиться в случайную точку
-    // - * Нельзя давать танку заезжать за экран
 }
