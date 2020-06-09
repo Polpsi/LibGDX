@@ -11,8 +11,10 @@ import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.Skin;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
+import com.dune.game.core.builds.Base;
 import com.dune.game.core.gui.GuiPlayerInfo;
 import com.dune.game.core.units.AbstractUnit;
+import com.dune.game.core.units.Owner;
 import com.dune.game.screens.ScreenManager;
 
 import java.util.ArrayList;
@@ -33,6 +35,7 @@ public class GameController {
     private Vector2 mouse;
     private Collider collider;
     private Vector2 pointOfView;
+    private Base playerBase;
 
     private List<AbstractUnit> selectedUnits;
 
@@ -92,6 +95,9 @@ public class GameController {
         this.unitsController = new UnitsController(this);
         this.pointOfView = new Vector2(ScreenManager.HALF_WORLD_WIDTH, ScreenManager.HALF_WORLD_HEIGHT);
         createGuiAndPrepareGameInput();
+        // База одна, расположил пока в gc.
+        this.playerBase=new Base(this);
+        playerBase.setup(Owner.PLAYER,300f,400f);
     }
 
     public void update(float dt) {
@@ -100,6 +106,7 @@ public class GameController {
         ScreenManager.getInstance().getViewport().unproject(mouse);
         unitsController.update(dt);
         playerLogic.update(dt);
+        playerBase.update(dt);
         projectilesController.update(dt);
         map.update(dt);
         collider.checkCollisions();
@@ -112,6 +119,13 @@ public class GameController {
         ScreenManager.getInstance().resetCamera();
         stage.act(dt);
         changePOV(dt);
+    }
+
+    public Base getPlayerBase(){
+        return playerBase;
+    }
+    public void playerGetResources(int resources){
+        playerLogic.playerGetResources(resources);
     }
 
     public void changePOV(float dt) {
