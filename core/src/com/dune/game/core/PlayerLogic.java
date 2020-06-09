@@ -13,6 +13,7 @@ public class PlayerLogic {
     private int unitsCount;
     private int unitsMaxCount;
 
+
     public int getMoney() {
         return money;
     }
@@ -56,5 +57,9 @@ public class PlayerLogic {
                 unit.commandAttack(aiUnit);
             }
         }
+    }
+
+    public void playerGetResources(int resources) {
+        this.money += resources*100;
     }
 }

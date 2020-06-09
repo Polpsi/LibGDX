@@ -2,17 +2,18 @@ package com.dune.game.core.units;
 
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.Vector2;
-import com.dune.game.core.Assets;
-import com.dune.game.core.GameController;
-import com.dune.game.core.Targetable;
-import com.dune.game.core.Weapon;
+import com.dune.game.core.*;
 
 public class Harvester extends AbstractUnit {
+    private Vector2 lastResource = new Vector2();
+    private float speedUnload = 10;
+    private float timer;
+
     public Harvester(GameController gc) {
         super(gc);
         this.textures = Assets.getInstance().getAtlas().findRegion("tankcore").split(64, 64)[0];
         this.weaponTexture = Assets.getInstance().getAtlas().findRegion("harvester");
-        this.containerCapacity = 10;
+        this.containerCapacity = 3;
         this.minDstToActiveTarget = 5.0f;
         this.speed = 120.0f;
         this.weapon = new Weapon(4.0f, 1);
@@ -33,8 +34,23 @@ public class Harvester extends AbstractUnit {
             int result = weapon.use(dt);
             if (result > -1) {
                 container += gc.getMap().harvestResource(position, result);
-                if (container > containerCapacity) {
+                if (container >= containerCapacity) {
                     container = containerCapacity;
+                    if (this.ownerType==Owner.PLAYER) {
+                        lastResource.set(position);
+                        destination.set(gc.getPlayerBase().getPosition());
+                    }
+                }
+            }
+        } else if ((this.ownerType==Owner.PLAYER) && position.dst(gc.getPlayerBase().getPosition())< 30) {
+            timer +=dt;
+            if (timer >= speedUnload) {
+                gc.playerGetResources(container);
+                container=0;
+                timer=0;
+                if (lastResource.x>0) {
+                    destination.set(lastResource);
+                    lastResource.set(0,0);
                 }
             }
         } else {
